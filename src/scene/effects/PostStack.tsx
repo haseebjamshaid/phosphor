@@ -5,6 +5,7 @@ import type { BloomEffect, ChromaticAberrationEffect, GlitchEffect } from 'postp
 import { useRef, type ReactElement } from 'react'
 import { useConfigStore } from '../../store/configStore'
 import { useAudioFrame } from '../useAudioFrame'
+import { Kaleidoscope } from './kaleidoscopeEffect'
 
 const BEAT_CA_SCALE = 0.006 // how much a full beat adds to the CA offset
 const LEVEL_BLOOM_SCALE = 0.4 // how much loudness brightens the bloom
@@ -48,6 +49,9 @@ export function PostStack() {
   })
 
   const passes: ReactElement[] = []
+  if (effects.kaleidoscope.enabled) {
+    passes.push(<Kaleidoscope key="kaleido" />)
+  }
   if (effects.bloom.enabled) {
     passes.push(
       <Bloom
