@@ -7,8 +7,9 @@ import { useConfigStore } from '../../store/configStore'
 import { useAudioFrame } from '../useAudioFrame'
 import { Kaleidoscope } from './kaleidoscopeEffect'
 
-const BEAT_CA_SCALE = 0.006 // how much a full beat adds to the CA offset
+const BEAT_CA_SCALE = 0.012 // how much a full beat adds to the CA offset (RGB split on hits)
 const LEVEL_BLOOM_SCALE = 0.4 // how much loudness brightens the bloom
+const BEAT_BLOOM_SCALE = 0.9 // how much a beat flashes the bloom
 const GLITCH_THRESHOLD = 0.15 // beatEnergy*intensity above this triggers a glitch burst
 
 /**
@@ -51,7 +52,7 @@ export function PostStack() {
 
     const bloom = bloomRef.current
     if (bloom) {
-      bloom.intensity = effects.bloom.intensity * (1 + level * LEVEL_BLOOM_SCALE)
+      bloom.intensity = effects.bloom.intensity * (1 + level * LEVEL_BLOOM_SCALE + beat * BEAT_BLOOM_SCALE)
     }
 
     const glitch = glitchRef.current

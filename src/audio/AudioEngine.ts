@@ -3,8 +3,11 @@ import {
   BAND_HALF_LIFE,
   BEAT_DECAY,
   FFT_SIZE,
+  INTENSITY_CEIL,
+  INTENSITY_FLOOR,
+  QUIET_REACTIVITY,
 } from '../lib/constants'
-import { clamp01, expSmooth } from '../lib/math'
+import { clamp01, expSmooth, smoothstep } from '../lib/math'
 import { computeLevel, reduceBands } from './bands'
 import { BeatDetector } from './beatDetector'
 import { createAudioFrame, type AudioFrame } from './audioFrame'
@@ -75,17 +78,26 @@ export class AudioEngine {
     analyser.getByteTimeDomainData(frame.time)
 
     const bands = reduceBands(frame.freq, context.sampleRate, analyser.fftSize)
-    frame.bass = expSmooth(frame.bass, bands.bass, BAND_HALF_LIFE, delta)
-    frame.mid = expSmooth(frame.mid, bands.mid, BAND_HALF_LIFE, delta)
-    frame.treble = expSmooth(frame.treble, bands.treble, BAND_HALF_LIFE, delta)
     frame.level = expSmooth(frame.level, computeLevel(frame.time), BAND_HALF_LIFE, delta)
+
+    // Absolute loudness (0..1) drives the song's dynamics. The bands react on a
+    // FLOOR-LIFTED curve (always ≥ QUIET_REACTIVITY) so the form keeps flowing with
+    // the melody and the singer's voice even in soft passages; the BEAT punch scales
+    // by raw loudness so quiet sections don't punch and the drop hits hard.
+    const loudness = smoothstep(INTENSITY_FLOOR, INTENSITY_CEIL, frame.level)
+    const bandGate = QUIET_REACTIVITY + (1 - QUIET_REACTIVITY) * loudness
+    frame.bass = expSmooth(frame.bass, bands.bass * bandGate, BAND_HALF_LIFE, delta)
+    frame.mid = expSmooth(frame.mid, bands.mid * bandGate, BAND_HALF_LIFE, delta)
+    frame.treble = expSmooth(frame.treble, bands.treble * bandGate, BAND_HALF_LIFE, delta)
 
     const { beat, energy } = this.beatDetector.update(bands.bass, delta)
     frame.sinceBeat += delta
     frame.beat = beat
     if (beat) {
       frame.sinceBeat = 0
-      frame.beatEnergy = Math.max(frame.beatEnergy, energy)
+      // A kick punches in proportion to how loud the moment is — soft in quiet
+      // passages, hard on the drop. Harder hits (bigger relative spike) punch bigger.
+      frame.beatEnergy = Math.max(frame.beatEnergy, clamp01(0.5 + energy * 0.7) * loudness)
     }
     frame.beatEnergy = Math.max(0, frame.beatEnergy - delta * BEAT_DECAY)
 

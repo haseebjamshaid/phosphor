@@ -43,7 +43,7 @@ export function OilSlickBlob() {
     material.uBeat = frame.beatEnergy
     material.uDisplacement = targets.displacement
     material.uColorShift = targets.color
-    mesh.scale.setScalar(1 + targets.scale * 0.4)
+    mesh.scale.setScalar(1 + targets.scale * 0.4 + frame.beatEnergy * 0.28)
     mesh.rotation.y += delta * targets.rotation * 0.5
   })
 

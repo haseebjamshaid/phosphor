@@ -15,6 +15,21 @@ export const ANALYSER_SMOOTHING = 0.8
 /** Half-life (seconds) for our extra exponential smoothing of band energies. */
 export const BAND_HALF_LIFE = 0.06
 
+/**
+ * Absolute-loudness window (RMS) mapped 0..1. Below FLOOR a passage reads as "quiet",
+ * above CEIL as "full intensity". This drives the BEAT punch and the band floor-lift —
+ * soft passages don't punch, loud sections erupt. Kept low/narrow so a normal singing
+ * verse already reads near-full (a quiet song should still clearly react).
+ */
+export const INTENSITY_FLOOR = 0.03
+export const INTENSITY_CEIL = 0.18
+
+/**
+ * Floor for band reactivity: even in near-silence the bands react at this fraction, so
+ * the form always flows with the melody and the singer's voice. Loudness lifts it to 1.
+ */
+export const QUIET_REACTIVITY = 0.5
+
 /** Frequency ranges (Hz) reduced into the three reactive bands. */
 export const BAND_RANGES = {
   bass: [20, 250],

@@ -2,16 +2,13 @@ import type { AudioFrame } from '../audioFrame'
 import { BEAT_DECAY } from '../../lib/constants'
 import type { AudioSource } from './AudioSource'
 
-const SYNTH_BEAT_INTERVAL = 0.5 // seconds between synthetic beats (~120 bpm)
-
 /**
  * Synthetic "self-animation" source for the cold open and unsupported browsers.
- * Produces gently oscillating bands and a steady synthetic beat so the visuals
- * always look alive with no real audio. Fills the AudioFrame via `sample`.
+ * A slow, low-amplitude breathing — alive but calm, with NO synthetic beats, so the
+ * entry/picker screen drifts gently instead of pulsing. Fills the AudioFrame via `sample`.
  */
 export function createIdleSource(): AudioSource {
   let elapsed = 0
-  let nextBeat = SYNTH_BEAT_INTERVAL
 
   return {
     kind: 'idle',
@@ -23,20 +20,15 @@ export function createIdleSource(): AudioSource {
       elapsed += delta
       frame.t = elapsed
 
-      frame.bass = 0.3 + 0.25 * Math.sin(elapsed * 1.2)
-      frame.mid = 0.25 + 0.2 * Math.sin(elapsed * 0.8 + 1)
-      frame.treble = 0.2 + 0.15 * Math.sin(elapsed * 1.7 + 2)
+      // Gentle, slow drift — small amplitudes so the form merely breathes.
+      frame.bass = 0.12 + 0.07 * Math.sin(elapsed * 0.5)
+      frame.mid = 0.1 + 0.05 * Math.sin(elapsed * 0.35 + 1)
+      frame.treble = 0.07 + 0.04 * Math.sin(elapsed * 0.7 + 2)
       frame.level = (frame.bass + frame.mid + frame.treble) / 3
 
+      // No synthetic beats — let any residual beat energy decay to stillness.
       frame.beat = false
-      if (elapsed >= nextBeat) {
-        frame.beat = true
-        frame.beatEnergy = 0.8
-        frame.sinceBeat = 0
-        nextBeat = elapsed + SYNTH_BEAT_INTERVAL
-      } else {
-        frame.sinceBeat += delta
-      }
+      frame.sinceBeat += delta
       frame.beatEnergy = Math.max(0, frame.beatEnergy - delta * BEAT_DECAY)
     },
   }

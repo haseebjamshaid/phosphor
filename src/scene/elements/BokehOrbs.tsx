@@ -29,6 +29,7 @@ const ORB_LAYOUT = (() => {
  */
 export function BokehOrbs() {
   const materialRef = useRef<InstanceType<typeof BokehMaterial>>(null)
+  const travel = useRef(0)
   const frame = useAudioFrame()
   const primary = useConfigStore((s) => s.config.palette.primary)
 
@@ -46,13 +47,18 @@ export function BokehOrbs() {
     const material = materialRef.current
     if (!material) return
     material.uColor.set(primary)
-    if (!frame) {
-      material.uTime += delta
-      return
-    }
-    material.uTime = frame.t
-    material.uBass = frame.bass
-    material.uLevel = frame.level
+
+    const level = frame?.level ?? 0
+    const beat = frame?.beatEnergy ?? 0
+    // Warp speed ramps with the SQUARE of energy — calm in the verses, a rush on the drop.
+    const warpSpeed = 0.3 + level * level * 14 + beat * 6
+    travel.current += warpSpeed * delta
+
+    material.uTravel = travel.current
+    material.uTime = frame ? frame.t : material.uTime + delta
+    material.uBass = frame?.bass ?? 0
+    material.uBeat = beat
+    material.uLevel = level
   })
 
   return (

@@ -6,6 +6,9 @@ import { snoise } from './glsl/noise'
 const vertexShader = /* glsl */ `
   uniform float uTime;
   uniform float uBass;
+  uniform float uMid;
+  uniform float uTreble;
+  uniform float uBeat;
   uniform float uDisplacement;
   varying vec3 vNormal;
   varying vec3 vView;
@@ -18,9 +21,16 @@ const vertexShader = /* glsl */ `
     vec3 dir = normalize(position);
     float n1 = snoise(dir * 1.5 + vec3(0.0, 0.0, uTime * 0.18));
     float n2 = snoise(dir * 3.2 - vec3(uTime * 0.12));
-    float disp = n1 * 0.65 + n2 * 0.35;
-    float amount = 0.16 + uBass * 0.55 + uDisplacement * 0.6;
+    // Finer, faster-moving layer — the singer's voice (mid/treble) ripples this,
+    // a shimmering detail distinct from the bass's slow swells.
+    float n3 = snoise(dir * 6.0 + vec3(uTime * 0.45));
+    float disp = n1 * 0.6 + n2 * 0.3 + n3 * 0.1;
+    // Bass drives the slow morph; a beat kicks the surface outward (the "dum" hit).
+    float amount = 0.16 + uBass * 0.5 + uDisplacement * 0.55 + uBeat * 0.5;
+    // The voice (mid + treble) drives the fine ripple, so singing visibly animates the form.
+    float voice = uMid * 0.45 + uTreble * 0.3;
     p += normal * disp * amount;
+    p += normal * n3 * voice;
     vNoise = disp;
 
     vec4 mv = modelViewMatrix * vec4(p, 1.0);
@@ -61,7 +71,7 @@ const fragmentShader = /* glsl */ `
     color += uAccent * fres * (0.35 + uBeat * 0.9);
 
     float glow = fres * (0.7 + uBeat * 1.3);
-    color *= (0.45 + glow);
+    color *= (0.45 + glow + uBeat * 0.5); // whole-form flash on the hit
 
     gl_FragColor = vec4(color, 1.0);
   }

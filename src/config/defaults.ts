@@ -25,6 +25,6 @@ export const DEFAULT_CONFIG: VisualizerConfig = {
     trebleTarget: 'displacement',
     sensitivity: 1,
     smoothing: 0.8,
-    beatSensitivity: 0.5,
+    beatSensitivity: 0.65,
   },
 }
