@@ -2,13 +2,20 @@ import { Canvas } from '@react-three/fiber'
 import { DPR_MAX } from '../lib/constants'
 import { useConfigStore } from '../store/configStore'
 import { PostStack } from './effects/PostStack'
+import { BokehOrbs } from './elements/BokehOrbs'
 import { OilSlickBlob } from './elements/OilSlickBlob'
 import { FrameDriver } from './FrameDriver'
 
 /** The audio-reactive elements, each toggled by its config flag. */
 function SceneElements() {
   const oilSlick = useConfigStore((s) => s.config.elements.oilSlick)
-  return <>{oilSlick && <OilSlickBlob />}</>
+  const bokeh = useConfigStore((s) => s.config.elements.bokeh)
+  return (
+    <>
+      {oilSlick && <OilSlickBlob />}
+      {bokeh && <BokehOrbs />}
+    </>
+  )
 }
 
 export function Visualizer() {
