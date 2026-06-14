@@ -23,5 +23,5 @@ export const useRuntimeStore = create<RuntimeState>((set) => ({
   error: null,
   setEngine: (engine) => set({ engine }),
   setStatus: (status) => set({ status }),
-  setError: (error) => set({ error, status: error ? 'error' : 'idle' }),
+  setError: (error) => set({ error }),
 }))

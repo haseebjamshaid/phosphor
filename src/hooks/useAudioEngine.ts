@@ -36,6 +36,7 @@ export function useAudioEngine(): UseAudioEngine {
         await engine.setSource(makeSource())
         setStatus('live')
       } catch (error: unknown) {
+        setStatus('error')
         setError(getErrorMessage(error))
       }
     },

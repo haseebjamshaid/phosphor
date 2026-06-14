@@ -2,28 +2,34 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 import { detectCapabilities } from '../audio/sources/capabilities'
 import { useAudioEngine } from '../hooks/useAudioEngine'
 import { useRuntimeStore } from '../store/runtimeStore'
+import { useUiStore } from '../store/uiStore'
 
 /**
- * Source selection overlay. Offers system audio (Chromium desktop only), file
- * playback (anywhere, also via drag-drop), and the idle preview. Hidden once live.
+ * Source selection overlay, opened from the toolbar. Offers system audio (Chromium
+ * desktop only) and file playback (anywhere, also via drag-drop). Closing keeps the
+ * idle visuals running. Errors surface via the global toast, not inline.
  */
 export function SourcePicker() {
-  const { startFile, startSystem, startIdle } = useAudioEngine()
+  const { startFile, startSystem } = useAudioEngine()
+  const pickerOpen = useUiStore((s) => s.pickerOpen)
+  const closePicker = useUiStore((s) => s.closePicker)
   const status = useRuntimeStore((s) => s.status)
-  const error = useRuntimeStore((s) => s.error)
   const caps = useMemo(() => detectCapabilities(navigator, window), [])
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
 
-  const handleFiles = useCallback(
+  const pickFile = useCallback(
     (files: FileList | null) => {
       const file = files?.[0]
-      if (file) void startFile(file)
+      if (file) {
+        void startFile(file)
+        closePicker()
+      }
     },
-    [startFile],
+    [startFile, closePicker],
   )
 
-  if (status === 'live') return null
+  if (!pickerOpen) return null
 
   const connecting = status === 'connecting'
 
@@ -38,29 +44,39 @@ export function SourcePicker() {
       onDrop={(e) => {
         e.preventDefault()
         setDragging(false)
-        handleFiles(e.dataTransfer.files)
+        pickFile(e.dataTransfer.files)
       }}
     >
       <div className="source-picker__card">
+        <button
+          type="button"
+          className="source-picker__close"
+          onClick={closePicker}
+          aria-label="Close"
+        >
+          ×
+        </button>
         <h1 className="source-picker__title">phosphor</h1>
         <p className="source-picker__hint">{connecting ? 'Connecting…' : 'Feed it sound'}</p>
 
         <div className="source-picker__actions">
           {caps.system && (
-            <button type="button" disabled={connecting} onClick={() => void startSystem()}>
+            <button
+              type="button"
+              disabled={connecting}
+              onClick={() => {
+                void startSystem()
+                closePicker()
+              }}
+            >
               Connect system audio
             </button>
           )}
           <button type="button" disabled={connecting} onClick={() => inputRef.current?.click()}>
             Play an audio file
           </button>
-          <button
-            type="button"
-            className="source-picker__ghost"
-            disabled={connecting}
-            onClick={() => void startIdle()}
-          >
-            Idle preview
+          <button type="button" className="source-picker__ghost" onClick={closePicker}>
+            Keep idle visuals
           </button>
         </div>
 
@@ -69,17 +85,15 @@ export function SourcePicker() {
           type="file"
           accept="audio/*"
           hidden
-          onChange={(e) => handleFiles(e.target.files)}
+          onChange={(e) => pickFile(e.target.files)}
         />
 
         {!caps.system && (
           <p className="source-picker__note">
-            System-audio capture needs Chrome or Edge on desktop. Drop a file or use the idle
-            preview here.
+            System-audio capture needs Chrome or Edge on desktop. Drop a file or keep the idle
+            visuals here.
           </p>
         )}
-
-        {error && <p className="source-picker__error">{error}</p>}
       </div>
     </div>
   )

@@ -6,6 +6,9 @@ import react from '@vitejs/plugin-react'
 export default defineConfig(({ mode }) => ({
   base: mode === 'production' ? '/phosphor/' : '/',
   plugins: [react()],
+  // Force a single copy of three — a transitive dep (stats-gl) pulls an older
+  // version, and two three instances break instanceof checks in postprocessing.
+  resolve: { dedupe: ['three'] },
   test: {
     environment: 'jsdom',
     include: ['src/**/*.{test,spec}.{ts,tsx}'],

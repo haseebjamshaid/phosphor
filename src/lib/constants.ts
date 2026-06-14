@@ -42,5 +42,5 @@ export const BEAT_DEFAULTS = {
 
 // --- Debug ---
 
-/** Show the FFT debug bars overlay (disabled for the polished build in Phase 9). */
-export const SHOW_DEBUG = true
+/** Show the FFT debug bars overlay. Flip to true while developing audio reactivity. */
+export const SHOW_DEBUG = false

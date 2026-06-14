@@ -48,12 +48,16 @@ export class AudioEngine {
     }
   }
 
-  /** Swap the active source, disposing the previous one. */
+  /**
+   * Swap the active source. Connects the new source FIRST, so if connect throws
+   * (e.g. the user declines the share prompt) the previously active source keeps
+   * running instead of leaving the engine in a dead state.
+   */
   async setSource(source: AudioSource): Promise<void> {
+    const node = await source.connect(this.context)
     this.source?.dispose()
     this.beatDetector.reset()
     this.source = source
-    const node = await source.connect(this.context)
     if (node) node.connect(this.analyser)
   }
 

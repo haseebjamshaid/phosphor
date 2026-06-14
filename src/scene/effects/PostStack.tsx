@@ -2,7 +2,7 @@ import { useFrame } from '@react-three/fiber'
 import { Bloom, ChromaticAberration, EffectComposer, Glitch, Noise } from '@react-three/postprocessing'
 import { GlitchMode } from 'postprocessing'
 import type { BloomEffect, ChromaticAberrationEffect, GlitchEffect } from 'postprocessing'
-import { useRef, type ReactElement } from 'react'
+import { useCallback, useRef, type ReactElement } from 'react'
 import { useConfigStore } from '../../store/configStore'
 import { useAudioFrame } from '../useAudioFrame'
 import { Kaleidoscope } from './kaleidoscopeEffect'
@@ -20,9 +20,23 @@ const GLITCH_THRESHOLD = 0.15 // beatEnergy*intensity above this triggers a glit
 export function PostStack() {
   const effects = useConfigStore((s) => s.config.effects)
   const frame = useAudioFrame()
-  const caRef = useRef<ChromaticAberrationEffect>(null)
-  const bloomRef = useRef<BloomEffect>(null)
-  const glitchRef = useRef<GlitchEffect>(null)
+  // Callback refs (functions), not ref objects: @react-three/postprocessing's
+  // wrapEffect JSON.stringifies its props as a memo key, and in React 19 `ref` is a
+  // prop. A ref OBJECT would serialize ref.current (a Three effect full of textures
+  // with circular parent/children) and crash. A function ref is dropped by
+  // JSON.stringify, so it's safe while still handing us the instance.
+  const caRef = useRef<ChromaticAberrationEffect | null>(null)
+  const bloomRef = useRef<BloomEffect | null>(null)
+  const glitchRef = useRef<GlitchEffect | null>(null)
+  const setCa = useCallback((effect: ChromaticAberrationEffect | null) => {
+    caRef.current = effect
+  }, [])
+  const setBloom = useCallback((effect: BloomEffect | null) => {
+    bloomRef.current = effect
+  }, [])
+  const setGlitch = useCallback((effect: GlitchEffect | null) => {
+    glitchRef.current = effect
+  }, [])
 
   useFrame(() => {
     const beat = frame?.beatEnergy ?? 0
@@ -56,7 +70,7 @@ export function PostStack() {
     passes.push(
       <Bloom
         key="bloom"
-        ref={bloomRef}
+        ref={setBloom}
         mipmapBlur
         intensity={effects.bloom.intensity}
         luminanceThreshold={effects.bloom.threshold}
@@ -65,10 +79,10 @@ export function PostStack() {
     )
   }
   if (effects.chromaticAberration.enabled) {
-    passes.push(<ChromaticAberration key="ca" ref={caRef} />)
+    passes.push(<ChromaticAberration key="ca" ref={setCa} />)
   }
   if (effects.glitch.enabled) {
-    passes.push(<Glitch key="glitch" ref={glitchRef} mode={GlitchMode.DISABLED} active />)
+    passes.push(<Glitch key="glitch" ref={setGlitch} mode={GlitchMode.DISABLED} active />)
   }
   if (effects.grain.enabled) {
     passes.push(<Noise key="grain" opacity={effects.grain.opacity} />)

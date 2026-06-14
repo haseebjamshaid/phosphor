@@ -100,7 +100,7 @@ export function ControlsPanel() {
 
   return (
     <>
-      <Leva collapsed={false} />
+      <Leva collapsed />
       <ParameterControls key={presetVersion} />
     </>
   )
