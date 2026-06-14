@@ -54,11 +54,18 @@ export class AudioEngine {
     this.beatDetector.reset()
     this.source = source
     const node = await source.connect(this.context)
-    node.connect(this.analyser)
+    if (node) node.connect(this.analyser)
   }
 
   /** Per-frame pump: analyser → bands/beat → AudioFrame (mutated in place). */
   tick(delta: number): void {
+    const source = this.source
+    if (source?.sample) {
+      // Synthetic source (idle): fills the frame directly, no analyser.
+      source.sample(this.frame, delta)
+      return
+    }
+
     const { analyser, frame, context } = this
     analyser.getByteFrequencyData(frame.freq)
     analyser.getByteTimeDomainData(frame.time)

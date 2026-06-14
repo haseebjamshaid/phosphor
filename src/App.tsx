@@ -3,7 +3,7 @@ import { SHOW_DEBUG } from './lib/constants'
 import { Visualizer } from './scene/Visualizer'
 import { ControlsPanel } from './ui/ControlsPanel'
 import { FftDebugBars } from './ui/FftDebugBars'
-import { FileDrop } from './ui/FileDrop'
+import { SourcePicker } from './ui/SourcePicker'
 
 function App() {
   useEngineConfigSync()
@@ -12,7 +12,7 @@ function App() {
     <>
       <Visualizer />
       <ControlsPanel />
-      <FileDrop />
+      <SourcePicker />
       {SHOW_DEBUG && <FftDebugBars />}
     </>
   )
