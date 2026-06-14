@@ -4,7 +4,7 @@ import {
   BEAT_DECAY,
   FFT_SIZE,
 } from '../lib/constants'
-import { expSmooth } from '../lib/math'
+import { clamp01, expSmooth } from '../lib/math'
 import { computeLevel, reduceBands } from './bands'
 import { BeatDetector } from './beatDetector'
 import { createAudioFrame, type AudioFrame } from './audioFrame'
@@ -29,6 +29,16 @@ export class AudioEngine {
     this.analyser.fftSize = FFT_SIZE
     this.analyser.smoothingTimeConstant = ANALYSER_SMOOTHING
     this.frame = createAudioFrame(this.analyser.frequencyBinCount, this.analyser.fftSize)
+  }
+
+  /** Apply the analyser's temporal smoothing (0..1) from config. */
+  setSmoothing(smoothing: number): void {
+    this.analyser.smoothingTimeConstant = clamp01(smoothing)
+  }
+
+  /** Apply beat-detection sensitivity (0..1) from config. */
+  setBeatSensitivity(sensitivity: number): void {
+    this.beatDetector.setSensitivity(sensitivity)
   }
 
   /** Resume the context (must be called from a user gesture). */

@@ -1,5 +1,5 @@
 import { BEAT_DEFAULTS } from '../lib/constants'
-import { clamp01, mean } from '../lib/math'
+import { clamp01, lerp, mean } from '../lib/math'
 
 export interface BeatResult {
   /** True only on the frame a beat fires. */
@@ -35,6 +35,14 @@ export class BeatDetector {
   reset(): void {
     this.history = []
     this.timeSinceBeatMs = Number.POSITIVE_INFINITY
+  }
+
+  /**
+   * Map a 0..1 sensitivity to the threshold multiplier: higher sensitivity → lower
+   * multiplier → more beats fire.
+   */
+  setSensitivity(sensitivity: number): void {
+    this.options.thresholdMultiplier = lerp(1.8, 1.05, clamp01(sensitivity))
   }
 
   /** Feed one frame's energy (0..1) and the elapsed time since the last call (seconds). */
