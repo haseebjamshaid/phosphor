@@ -1,0 +1,79 @@
+import {
+  ANALYSER_SMOOTHING,
+  BAND_HALF_LIFE,
+  BEAT_DECAY,
+  FFT_SIZE,
+} from '../lib/constants'
+import { expSmooth } from '../lib/math'
+import { computeLevel, reduceBands } from './bands'
+import { BeatDetector } from './beatDetector'
+import { createAudioFrame, type AudioFrame } from './audioFrame'
+import type { AudioSource } from './sources/AudioSource'
+
+/**
+ * Owns the single AudioContext + AnalyserNode for the app lifetime and the one
+ * mutable AudioFrame. `tick(delta)` is the per-frame pump called from FrameDriver;
+ * it reads the analyser and updates the frame in place — no allocation, no React.
+ */
+export class AudioEngine {
+  readonly context: AudioContext
+  readonly analyser: AnalyserNode
+  readonly frame: AudioFrame
+
+  private readonly beatDetector = new BeatDetector()
+  private source: AudioSource | null = null
+
+  constructor() {
+    this.context = new AudioContext()
+    this.analyser = this.context.createAnalyser()
+    this.analyser.fftSize = FFT_SIZE
+    this.analyser.smoothingTimeConstant = ANALYSER_SMOOTHING
+    this.frame = createAudioFrame(this.analyser.frequencyBinCount, this.analyser.fftSize)
+  }
+
+  /** Resume the context (must be called from a user gesture). */
+  async resume(): Promise<void> {
+    if (this.context.state !== 'running') {
+      await this.context.resume()
+    }
+  }
+
+  /** Swap the active source, disposing the previous one. */
+  async setSource(source: AudioSource): Promise<void> {
+    this.source?.dispose()
+    this.beatDetector.reset()
+    this.source = source
+    const node = await source.connect(this.context)
+    node.connect(this.analyser)
+  }
+
+  /** Per-frame pump: analyser → bands/beat → AudioFrame (mutated in place). */
+  tick(delta: number): void {
+    const { analyser, frame, context } = this
+    analyser.getByteFrequencyData(frame.freq)
+    analyser.getByteTimeDomainData(frame.time)
+
+    const bands = reduceBands(frame.freq, context.sampleRate, analyser.fftSize)
+    frame.bass = expSmooth(frame.bass, bands.bass, BAND_HALF_LIFE, delta)
+    frame.mid = expSmooth(frame.mid, bands.mid, BAND_HALF_LIFE, delta)
+    frame.treble = expSmooth(frame.treble, bands.treble, BAND_HALF_LIFE, delta)
+    frame.level = expSmooth(frame.level, computeLevel(frame.time), BAND_HALF_LIFE, delta)
+
+    const { beat, energy } = this.beatDetector.update(bands.bass, delta)
+    frame.sinceBeat += delta
+    frame.beat = beat
+    if (beat) {
+      frame.sinceBeat = 0
+      frame.beatEnergy = Math.max(frame.beatEnergy, energy)
+    }
+    frame.beatEnergy = Math.max(0, frame.beatEnergy - delta * BEAT_DECAY)
+
+    frame.t += delta
+  }
+
+  dispose(): void {
+    this.source?.dispose()
+    this.source = null
+    void this.context.close()
+  }
+}

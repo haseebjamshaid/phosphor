@@ -2,6 +2,7 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { useRef } from 'react'
 import type { Mesh } from 'three'
 import { BACKGROUND_COLOR, DPR_MAX } from '../lib/constants'
+import { FrameDriver } from './FrameDriver'
 
 /**
  * Phase 0 placeholder: a slowly rotating mesh that proves the r3f render loop,
@@ -33,6 +34,7 @@ export function Visualizer() {
       gl={{ antialias: true }}
       style={{ position: 'fixed', inset: 0 }}
     >
+      <FrameDriver />
       <color attach="background" args={[BACKGROUND_COLOR]} />
       <ambientLight intensity={0.3} />
       <pointLight position={[5, 5, 5]} intensity={60} color="#6ea8ff" />
