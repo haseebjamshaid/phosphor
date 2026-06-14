@@ -1,7 +1,8 @@
 import { Canvas, useFrame } from '@react-three/fiber'
 import { useRef } from 'react'
 import type { Mesh } from 'three'
-import { BACKGROUND_COLOR, DPR_MAX } from '../lib/constants'
+import { DPR_MAX } from '../lib/constants'
+import { useConfigStore } from '../store/configStore'
 import { FrameDriver } from './FrameDriver'
 
 /**
@@ -10,6 +11,7 @@ import { FrameDriver } from './FrameDriver'
  */
 function PlaceholderMesh() {
   const meshRef = useRef<Mesh>(null)
+  const primary = useConfigStore((s) => s.config.palette.primary)
 
   useFrame((_, delta) => {
     const mesh = meshRef.current
@@ -21,12 +23,20 @@ function PlaceholderMesh() {
   return (
     <mesh ref={meshRef}>
       <icosahedronGeometry args={[1, 0]} />
-      <meshStandardMaterial color="#1b3a6b" emissive="#0a1830" roughness={0.4} metalness={0.6} />
+      <meshStandardMaterial
+        color={primary}
+        emissive={primary}
+        emissiveIntensity={0.15}
+        roughness={0.4}
+        metalness={0.6}
+      />
     </mesh>
   )
 }
 
 export function Visualizer() {
+  const background = useConfigStore((s) => s.config.palette.background)
+
   return (
     <Canvas
       dpr={[1, DPR_MAX]}
@@ -35,7 +45,7 @@ export function Visualizer() {
       style={{ position: 'fixed', inset: 0 }}
     >
       <FrameDriver />
-      <color attach="background" args={[BACKGROUND_COLOR]} />
+      <color attach="background" args={[background]} />
       <ambientLight intensity={0.3} />
       <pointLight position={[5, 5, 5]} intensity={60} color="#6ea8ff" />
       <PlaceholderMesh />
