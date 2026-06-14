@@ -1,6 +1,7 @@
 import { Canvas } from '@react-three/fiber'
 import { DPR_MAX } from '../lib/constants'
 import { useConfigStore } from '../store/configStore'
+import { PostStack } from './effects/PostStack'
 import { OilSlickBlob } from './elements/OilSlickBlob'
 import { FrameDriver } from './FrameDriver'
 
@@ -23,6 +24,7 @@ export function Visualizer() {
       <FrameDriver />
       <color attach="background" args={[background]} />
       <SceneElements />
+      <PostStack />
     </Canvas>
   )
 }
